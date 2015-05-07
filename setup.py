@@ -19,7 +19,7 @@ setup(
     keywords = "python-tesseract OCR Python",
     url = "https://github.com/madmaze/python-tesseract",
     packages=['pytesseract'],
-    package_dir={'pytesseract': 'src'},
+    package_dir={'pytesseract': 'pytesseract'},
     package_data = {'pytesseract': ['*.png','*.jpg']},
     entry_points = {'console_scripts': ['pytesseract = pytesseract.pytesseract:main']},
     classifiers = [
