@@ -35,21 +35,21 @@ Prerequisites:
   isn't the case, for example because tesseract isn't in your PATH, you will
   have to change the "tesseract_cmd" variable at the top of 'tesseract.py'.
   Under Debian/Ubuntu you can use the package "tesseract-ocr".
-  
-Installing via pip:   
-See the [pytesseract package page](https://pypi.python.org/pypi/pytesseract)     
-$> sudo pip install pytesseract   
 
-Installing from source:   
-$> git clone git@github.com:madmaze/pytesseract.git   
-$> sudo python setup.py install    
+Installing via pip:
+See the [pytesseract package page](https://pypi.python.org/pypi/pytesseract)
+$> sudo pip install pytesseract
+
+Installing from source:
+$> git clone git@github.com:madmaze/pytesseract.git
+$> sudo python setup.py install
 
 
 LICENSE:
 Python-tesseract is released under the GPL v3.
 
 CONTRIBUTERS:
-- Originally written by [Samuel Hoffstaetter](https://github.com/hoffstaetter) 
+- Originally written by [Samuel Hoffstaetter](https://github.com/hoffstaetter)
 - [Juarez Bochi](https://github.com/jbochi)
 - [Matthias Lee](https://github.com/madmaze)
 - [Lars Kistner](https://github.com/Sr4l)
@@ -71,25 +71,29 @@ import shlex
 
 __all__ = ['image_to_string']
 
-def run_tesseract(input_filename, output_filename_base, lang=None, boxes=False, config=None):
+def run_tesseract(input_filename, output_filename_base, lang=None, boxes=False,
+        config=None, hocr=False):
     '''
     runs the command:
         `tesseract_cmd` `input_filename` `output_filename_base`
-    
+
     returns the exit status of tesseract, as well as tesseract's stderr output
 
     '''
     command = [tesseract_cmd, input_filename, output_filename_base]
-    
+
     if lang is not None:
         command += ['-l', lang]
 
     if boxes:
         command += ['batch.nochop', 'makebox']
-        
+
     if config:
         command += shlex.split(config)
-    
+
+    if hocr:
+        command += ['hocr']
+
     proc = subprocess.Popen(command,
             stderr=subprocess.PIPE)
     return (proc.wait(), proc.stderr.read())
@@ -125,14 +129,14 @@ class TesseractError(Exception):
         self.message = message
         self.args = (status, message)
 
-def image_to_string(image, lang=None, boxes=False, config=None):
+def image_to_string(image, lang=None, boxes=False, config=None, hocr=False):
     '''
     Runs tesseract on the specified image. First, the image is written to disk,
     and then the tesseract command is run on the image. Resseract's result is
     read, and the temporary files are erased.
-    
+
     also supports boxes and config.
-    
+
     if boxes=True
         "batch.nochop makebox" gets added to the tesseract call
     if config is set, the config gets appended to the command.
@@ -145,10 +149,12 @@ def image_to_string(image, lang=None, boxes=False, config=None):
         # Kind of a hack, should fix in the future some time.
         r, g, b, a = image.split()
         image = Image.merge("RGB", (r, g, b))
-    
+
     input_file_name = '%s.bmp' % tempnam()
     output_file_name_base = tempnam()
-    if not boxes:
+    if hocr:
+        output_file_name = '%s.hocr' % output_file_name_base
+    elif not boxes:
         output_file_name = '%s.txt' % output_file_name_base
     else:
         output_file_name = '%s.box' % output_file_name_base
@@ -158,7 +164,8 @@ def image_to_string(image, lang=None, boxes=False, config=None):
                                              output_file_name_base,
                                              lang=lang,
                                              boxes=boxes,
-                                             config=config)
+                                             config=config,
+                                             hocr=hocr)
         if status:
             errors = get_errors(error_string)
             raise TesseractError(status, errors)
